@@ -2,19 +2,28 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backend_bases import NavigationToolbar2
+
+try:
+    from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
+except ImportError:
+    from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg as NavigationToolbar2Tk
 
 plt.style.use('dark_background')
 
 def load_csv():
     file_path = filedialog.askopenfilename()
+    if not file_path:
+        return
     try:
         global data
-        data = pd.read_csv(file_path, sep=';')
-        data['Timestamp'] = pd.to_datetime(data['Timestamp'])
+        selected_separator = separator_combobox.get()
+        data = pd.read_csv(file_path, sep=selected_separator)
+        data['Timestamp'] = pd.to_datetime(data['Timestamp'], errors='coerce')
         update_column_listbox()
     except Exception as e:
-        messagebox.showerror("Error Loading File", e)
+        messagebox.showerror("Error Loading File", str(e))
 
 def update_column_listbox():
     column_listbox.delete(0, tk.END)
@@ -102,8 +111,13 @@ window.title("CSV Data Visualization")
 window.geometry('800x600')
 window.configure(bg=bg_color)
 
-load_button = tk.Button(window, text="Load CSV File", command=load_csv, bg=button_color, fg=fg_color)
-load_button.grid(row=0, column=0, sticky='ew', columnspan=6)
+
+load_button = tk.Button(window, text="Load CSV File", command=load_csv, bg='#5e5e5e', fg='#ffffff')
+load_button.grid(row=0, column=0, sticky='ew', columnspan=3)
+
+separator_combobox = ttk.Combobox(window, values=[',', ';', '\t', '|'], width=5)
+separator_combobox.grid(row=0, column=3, sticky='ew')
+separator_combobox.set(',')  # Ustaw domyślny separator
 
 column_listbox = tk.Listbox(window, selectmode='multiple', exportselection=0, height=6, bg=entry_bg, fg=entry_fg)
 column_listbox.grid(row=1, column=0, sticky='ewns', columnspan=6)
@@ -131,10 +145,10 @@ separate_scales_checkbutton.grid(row=3, column=0, sticky='w')
 plot_button = tk.Button(window, text="Generate Plot", command=plot_selected_columns, bg=button_color, fg=fg_color)
 plot_button.grid(row=3, column=4, sticky='ew')
 
-plot_frame = tk.Frame(window)
+plot_frame = tk.Frame(window, bg='#2e2e2e')
 plot_frame.grid(row=4, column=0, columnspan=7, sticky='nsew')
 
 window.grid_rowconfigure(4, weight=1)
-window.grid_columnconfigure([0, 1, 2, 3, 4], weight=1)
+window.grid_columnconfigure(0, weight=1)
 
 window.mainloop()
